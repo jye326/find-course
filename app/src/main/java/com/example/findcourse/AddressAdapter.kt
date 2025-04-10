@@ -1,22 +1,33 @@
 package com.example.findcourse
 
+import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class AdressAdapter(private val items: List<Address>):
-    RecyclerView.Adapter<AdressAdapter.ViewHolder>() {
+class AddressAdapter(
+    private val items: MutableList<Address>,
+    private val onDeleteClick: (Int) -> Unit
+) : RecyclerView.Adapter<AddressAdapter.ViewHolder>() {
 
-    inner class ViewHolder(val view: TextView) : RecyclerView.ViewHolder(view)
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val addressText: TextView = view.findViewById(R.id.addressText)
+        val deleteButton: Button = view.findViewById(R.id.deleteButton)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val textView = TextView(parent.context)
-        textView.setPadding(16, 16, 16, 16)
-        return ViewHolder(textView)
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_address, parent, false)
+        return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.view.text = items[position].text
+        holder.addressText.text = items[position].text
+        holder.deleteButton.setOnClickListener {
+            onDeleteClick(position)
+        }
     }
 
     override fun getItemCount() = items.size

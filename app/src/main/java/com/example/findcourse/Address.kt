@@ -1,3 +1,3 @@
 package com.example.findcourse
 
-data class Address()
+data class Address(val text: String)
