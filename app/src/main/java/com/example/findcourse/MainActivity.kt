@@ -5,45 +5,70 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.*
 import retrofit2.*
 import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : AppCompatActivity() {
 
-    private val addressList = mutableListOf<Address>()
+    private val addressList = mutableListOf<AddressEntity>()
     private lateinit var adapter: AddressAdapter
     private lateinit var kakaoApi: KakaoApiService
-    private val authHeader = "KakaoAK ${BuildConfig.KAKAO_API_KEY}"
 
-
-    private val searchResultList = mutableListOf<String>()
+    private val searchResultList = mutableListOf<KakaoPlace>()
     private lateinit var searchAdapter: SearchResultAdapter
 
     private var searchJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
+    private lateinit var dao: AddressDao
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.point_management)
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE addresses ADD COLUMN placeName TEXT")
+            }
+        }
+
+        val db = Room.databaseBuilder(
+            applicationContext,
+            AddressDatabase::class.java, "address-db"
+        ).addMigration(MIGRATION_1_2)
+            .build()
+        dao = db.addressDao()
 
         val input = findViewById<EditText>(R.id.addressInput)
         val button = findViewById<Button>(R.id.saveButton)
         val recyclerView = findViewById<RecyclerView>(R.id.addressList)
 
         adapter = AddressAdapter(addressList) { position ->
+            val address = addressList[position]
+            coroutineScope.launch {
+                dao.delete(address)
+            }
             addressList.removeAt(position)
             adapter.notifyItemRemoved(position)
         }
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        // Retrofit 초기화
+        // Room DB에서 저장된 주소 불러오기
+        coroutineScope.launch {
+            val savedAddresses = dao.getAll()
+            addressList.addAll(savedAddresses)
+            adapter.notifyDataSetChanged()
+        }
+
         val retrofit = Retrofit.Builder()
             .baseUrl("https://dapi.kakao.com/")
             .addConverterFactory(GsonConverterFactory.create())
@@ -54,11 +79,20 @@ class MainActivity : AppCompatActivity() {
         val searchRecyclerView = findViewById<RecyclerView>(R.id.searchResultList)
 
         searchAdapter = SearchResultAdapter(searchResultList) { selected ->
-            addressList.add(Address(selected))
-            adapter.notifyItemInserted(addressList.size - 1)
+            val selectedAddress = selected.road_address_name ?: selected.address_name
+            val placeName = selected.place_name ?: "이름 없음"
+
+
+            val entity = AddressEntity(address = selectedAddress, placeName = placeName)
+            coroutineScope.launch {
+                dao.insert(entity)
+            }
+
+            input.text.clear()
             searchResultList.clear()
             searchAdapter.notifyDataSetChanged()
         }
+
         searchRecyclerView.layoutManager = LinearLayoutManager(this)
         searchRecyclerView.adapter = searchAdapter
 
@@ -67,8 +101,8 @@ class MainActivity : AppCompatActivity() {
             searchJob?.cancel()
             if (text.length >= 2) {
                 searchJob = coroutineScope.launch {
-                    delay(300) // 300ms 딜레이로 디바운싱
-                    searchAddress(text) { results ->
+                    delay(300)
+                    searchPlace(text) { results: List<KakaoPlace> ->
                         searchResultList.clear()
                         searchResultList.addAll(results)
                         searchAdapter.notifyDataSetChanged()
@@ -83,7 +117,7 @@ class MainActivity : AppCompatActivity() {
         button.setOnClickListener {
             val query = input.text.toString()
             if (query.isNotBlank()) {
-                searchAddress(query) { results ->
+                searchPlace(query) { results ->
                     searchResultList.clear()
                     searchResultList.addAll(results)
                     searchAdapter.notifyDataSetChanged()
@@ -92,28 +126,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun searchAddress(query: String, callback: (List<String>) -> Unit) {
-        val call = kakaoApi.searchAddress(authHeader, query)
+    fun searchPlace(query: String, callback: (List<KakaoPlace>) -> Unit) {
+        val authHeader = "KakaoAK ${BuildConfig.KAKAO_API_KEY}"
+        val call = kakaoApi.searchKeyword(authHeader, query)
 
-        Log.d("KakaoKey", "Header: $authHeader")  // 👈 여기 추가
-
-        call.enqueue(object : Callback<KakaoAddressResponse> {
-            override fun onResponse(
-                call: Call<KakaoAddressResponse>,
-                response: Response<KakaoAddressResponse>
-            ) {
+        call.enqueue(object : Callback<KakaoKeywordResponse> {
+            override fun onResponse(call: Call<KakaoKeywordResponse>, response: Response<KakaoKeywordResponse>) {
                 if (response.isSuccessful) {
-                    val body = response.body()
-                    val addresses = body?.documents?.map { it.address_name } ?: emptyList()
-                    callback(addresses)
+                    callback(response.body()?.documents ?: emptyList())
                 } else {
-                    Log.e("주소검색", "API 오류: ${response.code()}")
+                    Log.e("KakaoAPI", "❌ ${response.code()}: ${response.errorBody()?.string()}")
                     callback(emptyList())
                 }
             }
 
-            override fun onFailure(call: Call<KakaoAddressResponse>, t: Throwable) {
-                Log.e("주소검색", "요청 실패: ${t.message}")
+            override fun onFailure(call: Call<KakaoKeywordResponse>, t: Throwable) {
+                Log.e("KakaoAPI", "❌ 요청 실패: ${t.message}")
                 callback(emptyList())
             }
         })

@@ -5,19 +5,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-
 class SearchResultAdapter(
-    private val items: List<String>,
-    private val onItemClick: (String) -> Unit
+    private val items: List<KakaoPlace>,
+    private val onItemClick: (KakaoPlace) -> Unit
 ) : RecyclerView.Adapter<SearchResultAdapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val resultText: TextView = view.findViewById(R.id.resultText)
+        val placeName: TextView = view.findViewById(R.id.placeName)
+        val addressName: TextView = view.findViewById(R.id.addressName)
 
         init {
             view.setOnClickListener {
-                val address = items[adapterPosition]
-                onItemClick(address)
+                onItemClick(items[adapterPosition])
             }
         }
     }
@@ -29,7 +28,9 @@ class SearchResultAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.resultText.text = items[position]
+        val item = items[position]
+        holder.placeName.text = item.place_name
+        holder.addressName.text = item.road_address_name ?: item.address_name
     }
 
     override fun getItemCount(): Int = items.size

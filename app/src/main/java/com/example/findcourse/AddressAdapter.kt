@@ -8,11 +8,12 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class AddressAdapter(
-    private val items: MutableList<Address>,
+    private val items: MutableList<AddressEntity>,
     private val onDeleteClick: (Int) -> Unit
 ) : RecyclerView.Adapter<AddressAdapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val placeNameText: TextView = view.findViewById(R.id.placeNameText)
         val addressText: TextView = view.findViewById(R.id.addressText)
         val deleteButton: Button = view.findViewById(R.id.deleteButton)
     }
@@ -23,12 +24,16 @@ class AddressAdapter(
         return ViewHolder(view)
     }
 
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.addressText.text = items[position].text
+        val item = items[position]
+        holder.placeNameText.text = item.placeName
+        holder.addressText.text = item.address
         holder.deleteButton.setOnClickListener {
             onDeleteClick(position)
         }
     }
+
 
     override fun getItemCount() = items.size
 }
