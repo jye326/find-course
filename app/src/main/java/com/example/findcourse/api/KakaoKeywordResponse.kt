@@ -1,4 +1,4 @@
-package com.example.findcourse
+package com.example.findcourse.api
 
 data class KakaoKeywordResponse(
     val documents: List<KakaoPlace>

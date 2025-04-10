@@ -1,6 +1,5 @@
 package com.example.findcourse
 
-import KakaoApiService
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -12,9 +11,13 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.findcourse.api.KakaoApiService
+import com.example.findcourse.api.KakaoKeywordResponse
+import com.example.findcourse.api.KakaoPlace
 import kotlinx.coroutines.*
 import retrofit2.*
 import retrofit2.converter.gson.GsonConverterFactory
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,7 +46,7 @@ class MainActivity : AppCompatActivity() {
         val db = Room.databaseBuilder(
             applicationContext,
             AddressDatabase::class.java, "address-db"
-        ).addMigration(MIGRATION_1_2)
+        ).addMigrations(MIGRATION_1_2)
             .build()
         dao = db.addressDao()
 
@@ -81,11 +84,20 @@ class MainActivity : AppCompatActivity() {
         searchAdapter = SearchResultAdapter(searchResultList) { selected ->
             val selectedAddress = selected.road_address_name ?: selected.address_name
             val placeName = selected.place_name ?: "이름 없음"
-
-
             val entity = AddressEntity(address = selectedAddress, placeName = placeName)
+
             coroutineScope.launch {
-                dao.insert(entity)
+                try {
+                    dao.insert(entity)
+
+                    // DB에 insert 성공했으므로 리스트에도 추가
+                    addressList.add(entity)
+                    adapter.notifyItemInserted(addressList.lastIndex)
+
+                    Log.d("MainActivity", "✅ 저장 성공: $entity")
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "❌ 저장 실패", e)
+                }
             }
 
             input.text.clear()
