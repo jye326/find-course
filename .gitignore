@@ -1,0 +1,28 @@
+# === IDE ===
+.idea/
+*.iml
+
+# === Gradle ===
+.gradle/
+local.properties
+gradle-app.setting
+
+# === Android build ===
+**/build/
+.cxx/
+.externalNativeBuild/
+
+# === Logs ===
+*.log
+
+# === Signing / Secrets ===
+*.jks
+*.keystore
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Misc ===
+*.orig
+captures/
