@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/routePreviewLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 출발지 입력 -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        <EditText
+            android:id="@+id/startInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="출발지 입력"
+            android:inputType="text"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/searchStartInputResultList"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/startInput"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+
+
+
+    <!-- 방문할 장소 수 입력 -->
+    <EditText
+        android:id="@+id/visitCountInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="방문할 장소 수 (예: 5)"
+        android:inputType="number"
+        android:padding="12dp"
+        android:layout_marginTop="12dp"
+        android:background="@android:drawable/editbox_background" />
+
+    <!-- 계산 버튼 -->
+    <Button
+        android:id="@+id/calculateRouteButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="최적 경로 계산"
+        android:layout_marginTop="16dp" />
+
+    <!-- 결과 표시 -->
+    <TextView
+        android:id="@+id/resultText"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="경로 결과가 여기에 표시됩니다."
+        android:padding="12dp"
+        android:layout_marginTop="12dp" />
+</LinearLayout>

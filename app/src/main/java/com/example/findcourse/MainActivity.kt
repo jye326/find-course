@@ -9,13 +9,20 @@ import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.findcourse.api.KakaoApiService
 import com.example.findcourse.api.KakaoKeywordResponse
 import com.example.findcourse.api.KakaoPlace
-import kotlinx.coroutines.*
-import retrofit2.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 
@@ -37,16 +44,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.point_management)
 
-        val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("ALTER TABLE addresses ADD COLUMN placeName TEXT")
-            }
-        }
-
         val db = Room.databaseBuilder(
             applicationContext,
-            AddressDatabase::class.java, "address-db"
-        ).addMigrations(MIGRATION_1_2)
+            AddressDatabase::class.java,
+            "address-db"
+        ).fallbackToDestructiveMigration()
             .build()
         dao = db.addressDao()
 
@@ -84,20 +86,30 @@ class MainActivity : AppCompatActivity() {
         searchAdapter = SearchResultAdapter(searchResultList) { selected ->
             val selectedAddress = selected.road_address_name ?: selected.address_name
             val placeName = selected.place_name ?: "이름 없음"
-            val entity = AddressEntity(address = selectedAddress, placeName = placeName)
 
-            coroutineScope.launch {
-                try {
-                    dao.insert(entity)
+            val lat = selected.y?.toDoubleOrNull()
+            val lng = selected.x?.toDoubleOrNull()
 
-                    // DB에 insert 성공했으므로 리스트에도 추가
-                    addressList.add(entity)
-                    adapter.notifyItemInserted(addressList.lastIndex)
+            if (lat != null && lng != null) {
+                val entity = AddressEntity(
+                    address = selectedAddress,
+                    placeName = placeName,
+                    latitude = lat,
+                    longitude = lng
+                )
 
-                    Log.d("MainActivity", "✅ 저장 성공: $entity")
-                } catch (e: Exception) {
-                    Log.e("MainActivity", "❌ 저장 실패", e)
+                coroutineScope.launch {
+                    try {
+                        dao.insert(entity)
+                        addressList.add(entity)
+                        adapter.notifyItemInserted(addressList.lastIndex)
+                        Log.d("MainActivity", "✅ 저장 성공: $entity")
+                    } catch (e: Exception) {
+                        Log.e("MainActivity", "❌ 저장 실패", e)
+                    }
                 }
+            } else {
+                Log.e("MainActivity", "❌ 좌표 정보가 없습니다.")
             }
 
             input.text.clear()
@@ -137,6 +149,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
 
     fun searchPlace(query: String, callback: (List<KakaoPlace>) -> Unit) {
         val authHeader = "KakaoAK ${BuildConfig.KAKAO_API_KEY}"

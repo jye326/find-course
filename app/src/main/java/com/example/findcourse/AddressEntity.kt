@@ -7,5 +7,8 @@ import androidx.room.PrimaryKey
 data class AddressEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val address: String,
-    val placeName: String
+    val placeName: String,
+    val latitude: Double,
+    val longitude: Double
+
 )
