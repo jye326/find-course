@@ -60,4 +60,15 @@
         android:text="경로 결과가 여기에 표시됩니다."
         android:padding="12dp"
         android:layout_marginTop="12dp" />
+
+    <!-- layout 맨 아래에 추가 -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/toPointManagementButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:src="@android:drawable/ic_menu_agenda"
+        android:contentDescription="주소 관리로 이동" />
+
 </LinearLayout>

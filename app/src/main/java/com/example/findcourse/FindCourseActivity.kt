@@ -1,7 +1,7 @@
 package com.example.findcourse
 
-import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -17,7 +17,7 @@ import androidx.room.Room
 import com.example.findcourse.api.KakaoApiService
 import com.example.findcourse.api.KakaoKeywordResponse
 import com.example.findcourse.api.KakaoPlace
-import com.example.findcourse.api.KakaoRouteService
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.*
 import retrofit2.Call
 import retrofit2.Callback
@@ -37,7 +37,6 @@ class FindCourseActivity : AppCompatActivity() {
     private val searchResultList = mutableListOf<KakaoPlace>()
     private var searchJob: Job? = null
 
-    private lateinit var routeApi: KakaoRouteService
     private lateinit var kakaoApi: KakaoApiService
     private lateinit var searchRecyclerView: RecyclerView
     private var ignoreNextChange = false
@@ -55,12 +54,6 @@ class FindCourseActivity : AppCompatActivity() {
             applicationContext,
             AddressDatabase::class.java, "address-db"
         ).fallbackToDestructiveMigration().build().addressDao()
-
-        val retrofitRoute = Retrofit.Builder()
-            .baseUrl("https://apis-navi.kakaomobility.com/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        routeApi = retrofitRoute.create(KakaoRouteService::class.java)
 
         val retrofitKeyword = Retrofit.Builder()
             .baseUrl("https://dapi.kakao.com/")
@@ -121,30 +114,29 @@ class FindCourseActivity : AppCompatActivity() {
         })
 
         findViewById<Button>(R.id.calculateRouteButton).setOnClickListener {
+            hideKeyboard() // ✅ 키보드 먼저 내림
+
             val startKeyword = startInput.text.toString().trim()
-            val countText = countInput.text.toString().trim()
 
             if (startKeyword.isBlank()) {
                 Toast.makeText(this, "출발지를 입력하세요", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
-            val placeCount = countText.toIntOrNull()
-            if (placeCount == null || placeCount <= 0) {
-                Toast.makeText(this, "방문할 장소 수를 올바르게 입력하세요", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            CalculateRouteHelper.calculateWithCombinations(
+            CalculateRouteHelper.calculateByTSP(
                 context = this,
                 startKeyword = startKeyword,
-                placeCount = placeCount,
                 dao = dao,
-                kakaoApi = kakaoApi,
-                routeApi = routeApi,
-                resultView = resultText
+                kakaoApi = kakaoApi, // ✅ 이거 추가!
+                resultView = resultText,
+                placeCount = countInput.text.toString().toInt()
             )
         }
+
+        findViewById<FloatingActionButton>(R.id.toPointManagementButton).setOnClickListener {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+        }
+
     }
 
     private fun hideKeyboard() {
@@ -172,16 +164,6 @@ class FindCourseActivity : AppCompatActivity() {
             }
         })
     }
-
-    fun calculateDistance(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
-        val R = 6371000.0
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLng = Math.toRadians(lng2 - lng1)
-        val a = sin(dLat / 2).pow(2.0) + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLng / 2).pow(2.0)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return R * c
-    }
 }
 
-// ✅ 캐시용 데이터 클래스
-data class PointPair(val fromLat: Double, val fromLng: Double, val toLat: Double, val toLng: Double)
+// ✅ 캐시용 데이터 클래스는 더 이상 필요하지 않음

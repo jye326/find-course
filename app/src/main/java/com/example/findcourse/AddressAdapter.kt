@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 
 class AddressAdapter(
     private val items: MutableList<AddressEntity>,
-    private val onDeleteClick: (Int) -> Unit
+    private val onDeleteClick: (Int, () -> Unit) -> Unit // ✅ 콜백 추가
 ) : RecyclerView.Adapter<AddressAdapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -30,7 +30,10 @@ class AddressAdapter(
         holder.placeNameText.text = item.placeName
         holder.addressText.text = item.address
         holder.deleteButton.setOnClickListener {
-            onDeleteClick(position)
+            onDeleteClick(position){
+                // 삭제 후 UI 갱신
+                notifyItemRemoved(position)
+            }
         }
     }
 

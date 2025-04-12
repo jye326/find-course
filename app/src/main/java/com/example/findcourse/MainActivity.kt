@@ -1,17 +1,21 @@
 package com.example.findcourse
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.example.findcourse.api.KakaoApiService
 import com.example.findcourse.api.KakaoKeywordResponse
 import com.example.findcourse.api.KakaoPlace
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -52,18 +56,22 @@ class MainActivity : AppCompatActivity() {
             .build()
         dao = db.addressDao()
 
+        updateAddressCount()
+
         val input = findViewById<EditText>(R.id.addressInput)
         val button = findViewById<Button>(R.id.saveButton)
         val recyclerView = findViewById<RecyclerView>(R.id.addressList)
 
-        adapter = AddressAdapter(addressList) { position ->
-            val address = addressList[position]
-            coroutineScope.launch {
-                dao.delete(address)
+        val adapter = AddressAdapter(addressList) { position, onUiUpdated ->
+            val toDelete = addressList[position]
+            lifecycleScope.launch {
+                dao.delete(toDelete)
+                addressList.removeAt(position)
+                onUiUpdated() // ✅ notifyItemRemoved 호출
+                updateAddressCount() // ✅ 주소 수 업데이트
             }
-            addressList.removeAt(position)
-            adapter.notifyItemRemoved(position)
         }
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
@@ -107,6 +115,7 @@ class MainActivity : AppCompatActivity() {
                     } catch (e: Exception) {
                         Log.e("MainActivity", "❌ 저장 실패", e)
                     }
+                    updateAddressCount()
                 }
             } else {
                 Log.e("MainActivity", "❌ 좌표 정보가 없습니다.")
@@ -148,7 +157,21 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        findViewById<FloatingActionButton>(R.id.toFindCourseButton).setOnClickListener {
+            val intent = Intent(this, FindCourseActivity::class.java)
+            startActivity(intent)
+        }
+
     }
+
+    private fun updateAddressCount() {
+        lifecycleScope.launch {
+            val count = dao.getAll().size
+            findViewById<TextView>(R.id.addressCountText).text = "총 ${count}개 주소 등록됨"
+        }
+    }
+
 
 
     fun searchPlace(query: String, callback: (List<KakaoPlace>) -> Unit) {
