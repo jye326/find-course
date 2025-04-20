@@ -52,14 +52,20 @@
         android:layout_marginTop="16dp" />
 
     <!-- 결과 표시 -->
-    <TextView
-        android:id="@+id/resultText"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:text="경로 결과가 여기에 표시됩니다."
-        android:padding="12dp"
-        android:layout_marginTop="12dp" />
+        android:layout_marginTop="12dp">
+
+        <TextView
+            android:id="@+id/resultText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="경로 결과가 여기에 표시됩니다."
+            android:padding="12dp" />
+    </ScrollView>
+
 
     <!-- layout 맨 아래에 추가 -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
