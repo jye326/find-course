@@ -59,8 +59,9 @@ class MainActivity : AppCompatActivity() {
         updateAddressCount()
 
         val input = findViewById<EditText>(R.id.addressInput)
-        val button = findViewById<Button>(R.id.saveButton)
+        val saveButton = findViewById<Button>(R.id.saveButton)
         val recyclerView = findViewById<RecyclerView>(R.id.addressList)
+        val deleteAllButton = findViewById<Button>(R.id.deleteAllButton);
 
         val adapter = AddressAdapter(addressList) { position, onUiUpdated ->
             val toDelete = addressList[position]
@@ -147,7 +148,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        button.setOnClickListener {
+        saveButton.setOnClickListener {
             val query = input.text.toString()
             if (query.isNotBlank()) {
                 searchPlace(query) { results ->
@@ -157,6 +158,21 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        deleteAllButton.setOnClickListener {
+            lifecycleScope.launch {
+                try {
+                    dao.deleteAll() // 모든 데이터 삭제
+                    addressList.clear() // UI 리스트에서 데이터도 삭제
+                    adapter.notifyDataSetChanged() // RecyclerView 갱신
+                    updateAddressCount() // 주소 개수 업데이트
+                    Log.d("MainActivity", "✅ 모든 주소가 삭제되었습니다.")
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "❌ 삭제 실패", e)
+                }
+            }
+        }
+
 
         findViewById<FloatingActionButton>(R.id.toFindCourseButton).setOnClickListener {
             val intent = Intent(this, FindCourseActivity::class.java)

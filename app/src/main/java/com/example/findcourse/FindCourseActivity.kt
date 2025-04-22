@@ -1,6 +1,5 @@
 package com.example.findcourse
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
@@ -24,7 +23,6 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import kotlin.math.*
 
 class FindCourseActivity : AppCompatActivity() {
 

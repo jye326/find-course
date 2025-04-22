@@ -15,4 +15,8 @@ interface AddressDao {
 
     @Delete
     suspend fun delete(address: AddressEntity)
+
+    // 모든 주소 삭제 메서드 추가
+    @Query("DELETE FROM addresses")
+    suspend fun deleteAll()
 }
